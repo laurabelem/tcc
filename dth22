@@ -1,0 +1,43 @@
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
+
+// === CONFIGURAÇÕES DO SENSOR ===
+#define DHTPIN 2        // Pino de dados conectado ao DHT22 (D2 = GPIO2)
+#define DHTTYPE DHT22   // Tipo do sensor
+
+DHT dht(DHTPIN, DHTTYPE);
+
+// === CONFIGURAÇÕES GERAIS ===
+unsigned long tempoAnterior = 0;
+const unsigned long intervalo = 1000; // 2 segundos entre leituras
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Iniciando leitura do DHT22...");
+  dht.begin();
+}
+
+void loop() {
+  unsigned long agora = millis();
+  
+  if (agora - tempoAnterior >= intervalo) {
+    tempoAnterior = agora;
+    
+    float umidade = dht.readHumidity();
+    float temperatura = dht.readTemperature(); // Celsius
+
+    // Verifica se as leituras são válidas
+    if (isnan(umidade) || isnan(temperatura)) {
+      Serial.println("Falha ao ler o sensor DHT22!");
+      return;
+    }
+
+    // Exibe os valores
+    Serial.print("Temperatura: ");
+    Serial.print(temperatura);
+    Serial.print(" °C  |  Umidade: ");
+    Serial.print(umidade);
+    Serial.println(" %");
+  }
+}
