@@ -1,0 +1,95 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
+#include <LiquidCrystal_I2C.h>
+
+#define DHTPIN 5         
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+#define LED_PIN 18        
+unsigned long tempoAnterior = 0;
+const unsigned long intervalo = 2000; 
+LiquidCrystal_I2C *lcd;
+
+//lcd
+uint8_t detectarEnderecoLCD() {
+  for (byte i = 1; i < 127; i++) {
+    Wire.beginTransmission(i);
+    if (Wire.endTransmission() == 0) {
+      if (i == 0x27 || i == 0x3F) {
+        return i;
+      }
+    }
+  }
+  return 0x27;
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+
+  pinMode(LED_PIN, OUTPUT);  
+  digitalWrite(LED_PIN, LOW); 
+  Wire.begin(21, 22);
+  uint8_t enderecoLCD = detectarEnderecoLCD();
+
+  lcd = new LiquidCrystal_I2C(enderecoLCD, 16, 2);
+  lcd->init();
+  lcd->backlight();
+
+  lcd->setCursor(0, 0);
+  lcd->print("Iniciando DHT22");
+  delay(2000);
+  lcd->clear();
+
+  dht.begin();
+}
+
+void loop() {
+  unsigned long agora = millis();
+  if (agora - tempoAnterior >= intervalo) {
+    tempoAnterior = agora;
+
+    float umidade = dht.readHumidity();
+    float temperatura = dht.readTemperature();
+
+    if (isnan(umidade) || isnan(temperatura)) {
+      Serial.println("Erro ao ler DHT22!");
+      lcd->clear();
+      lcd->setCursor(0, 0);
+      lcd->print("Falha no sensor!");
+      return;
+    }
+
+    Serial.print("Temperatura: ");
+    Serial.print(temperatura);
+    Serial.print(" °C  |  Umidade: ");
+    Serial.print(umidade);
+    Serial.println(" %");
+
+    static bool ledLigado = false; 
+
+    if (temperatura < 28.0 && !ledLigado) {
+      digitalWrite(LED_PIN, HIGH);
+      ledLigado = true;
+    }
+    else if (temperatura > 30.0 && ledLigado) {
+      digitalWrite(LED_PIN, LOW);
+      ledLigado = false;
+    }
+
+    lcd->clear();
+    lcd->setCursor(0, 0);
+    lcd->print("Temp: ");
+    lcd->print(temperatura, 1);
+    lcd->print("C");
+
+    lcd->setCursor(0, 1);
+    lcd->print("Umid: ");
+    lcd->print(umidade, 1);
+    lcd->print("%");
+
+  }
+}
