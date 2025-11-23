@@ -1,2 +1,2 @@
 # tcc
-meu tcc aaaaaaaaaaa
+repositório dos códigos do meu tcc
