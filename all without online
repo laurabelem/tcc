@@ -1,0 +1,204 @@
+/**
+ * Sistema de Monitoramento e Controle Térmico
+ * Temperatura = DS18B20 (controle principal)
+ * Umidade = DHT22 (somente monitoramento)
+ */
+
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <LiquidCrystal_I2C.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <math.h>
+
+/* -------------------- PINOS -------------------- */
+constexpr uint8_t PIN_DHT      = 5;
+constexpr uint8_t PIN_DS18B20  = 18;
+constexpr uint8_t PIN_LAMP     = 27;
+
+constexpr uint8_t DHTTYPE = DHT22;
+
+/* -------------------- CONTROLE TÉRMICO -------------------- */
+constexpr float TEMP_ALVO        = 30.0f;
+constexpr float HISTERESIS_INF   = 2.0f;
+constexpr float HISTERESIS_SUP   = 2.0f;
+
+constexpr unsigned long INTERVALO_LEITURA_MS = 2000;
+
+/* -------------------- FILTRO EMA & ALARMES -------------------- */
+float tempFiltrada = NAN;
+constexpr float ALFA = 0.25f;
+
+constexpr float TEMP_MIN_SEGURA    = 15.0f;
+constexpr float TEMP_MAX_SEGURA    = 40.0f;
+
+/* -------------------- OBJETOS -------------------- */
+DHT dht(PIN_DHT, DHTTYPE);
+OneWire oneWire(PIN_DS18B20);
+DallasTemperature ds18b20(&oneWire);
+LiquidCrystal_I2C* lcd = nullptr;
+
+/* -------------------- VARIÁVEIS -------------------- */
+unsigned long ultimoTempoLeitura = 0;
+
+bool  lampadaLigada = false;
+float tempDS        = NAN;
+float tempMedia     = NAN;
+float umidade       = NAN;
+
+/* -------------------- DETECTA LCD -------------------- */
+uint8_t detectarEnderecoLCD() {
+    for (uint8_t addr=1; addr<127; addr++){
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0){
+            if (addr == 0x27 || addr == 0x3F) return addr;
+        }
+    }
+    return 0x27;
+}
+
+/* -------------------- CONTROLE TÉRMICO -------------------- */
+void atualizarControleTermico(float temperatura) {
+
+    if (isnan(temperatura)) {
+        lampadaLigada = false;
+        digitalWrite(PIN_LAMP, LOW);
+        return;
+    }
+
+    const float limiteLiga    = TEMP_ALVO - HISTERESIS_INF;
+    const float limiteDesliga = TEMP_ALVO + HISTERESIS_SUP;
+
+    if (!lampadaLigada && temperatura <= limiteLiga)
+        lampadaLigada = true;
+
+    else if (lampadaLigada && temperatura >= limiteDesliga)
+        lampadaLigada = false;
+
+    digitalWrite(PIN_LAMP, lampadaLigada ? HIGH : LOW);
+}
+
+/* -------------------- SETUP -------------------- */
+void setup() {
+    Serial.begin(115200);
+    delay(300);
+
+    Wire.begin(21, 22);
+
+    uint8_t end = detectarEnderecoLCD();
+    lcd = new LiquidCrystal_I2C(end, 16, 2);
+    lcd->init();
+    lcd->backlight();
+
+    lcd->setCursor(0,0);
+    lcd->print("Iniciando...");
+    delay(1500);
+    lcd->clear();
+
+    dht.begin();
+    ds18b20.begin();
+
+    pinMode(PIN_LAMP, OUTPUT);
+    digitalWrite(PIN_LAMP, LOW);
+}
+
+/* -------------------- LOOP -------------------- */
+void loop() {
+
+    const unsigned long agora = millis();
+
+    if (agora - ultimoTempoLeitura >= INTERVALO_LEITURA_MS) {
+
+        ultimoTempoLeitura = agora;
+
+        // --- UMIDADE (DHT22) ---
+        umidade = dht.readHumidity();
+        bool erroUmidade = isnan(umidade);
+
+        // --- TEMPERATURA (DS18B20) ---
+        ds18b20.requestTemperatures();
+        tempDS = ds18b20.getTempCByIndex(0);
+
+        bool erroTemperatura = (tempDS == DEVICE_DISCONNECTED_C);
+
+        // --- *** SOMENTE ERRO DE TEMPERATURA INTERFERE NO CONTROLE ***
+        if (erroTemperatura) {
+            Serial.println("[ERRO] Falha no DS18B20!");
+            lcd->clear();
+            lcd->setCursor(0,0);
+            lcd->print("ERRO TEMP!");
+            lcd->setCursor(0,1);
+            lcd->print("DS18B20 FALHOU");
+
+            lampadaLigada = false;
+            digitalWrite(PIN_LAMP, LOW);
+            return;
+        }
+
+        // --- FILTRO EMA NA TEMPERATURA ---
+        if (isnan(tempFiltrada))
+            tempFiltrada = tempDS;
+        else
+            tempFiltrada = ALFA * tempDS + (1 - ALFA) * tempFiltrada;
+
+        tempMedia = tempFiltrada;
+
+        // --- ALARMES TERMICOS ---
+        bool alarme = false;
+        String msg = "";
+
+        if (tempMedia < TEMP_MIN_SEGURA) { alarme = true; msg = "FRIO EXTREMO"; }
+        else if (tempMedia > TEMP_MAX_SEGURA) { alarme = true; msg = "CALOR EXTREMO"; }
+
+        if (alarme) {
+            lampadaLigada = false;
+            digitalWrite(PIN_LAMP, LOW);
+
+            lcd->clear();
+            lcd->setCursor(0,0);
+            lcd->print("ALARME!");
+            lcd->setCursor(0,1);
+            lcd->print(msg);
+
+            Serial.println("[ALERTA] " + msg);
+            delay(2000);
+            return;
+        }
+
+        // --- CONTROLE TÉRMICO ----
+        atualizarControleTermico(tempMedia);
+
+        // --- PRINT SERIAL ---
+        Serial.print("Temp:");
+        Serial.print(tempMedia);
+        Serial.print(" | Umid: ");
+        if (!erroUmidade) Serial.print(umidade);
+        else Serial.print("ERR");
+        Serial.print(" | Lamp: ");
+        Serial.println(lampadaLigada ? "ON" : "OFF");
+
+        // --- LCD ---
+        lcd->clear();
+
+        // Linha 0 -> temperatura + estado
+        lcd->setCursor(0,0);
+        lcd->print("T:");
+        lcd->print(tempMedia,1);
+        lcd->print("C");
+
+        lcd->setCursor(10,0);
+        lcd->print(lampadaLigada ? "ON " : "OFF");
+
+        // Linha 1 -> umidade
+        lcd->setCursor(0,1);
+        lcd->print("U:");
+
+        if (!erroUmidade) {
+            lcd->print(umidade,1);
+            lcd->print("%");
+        } else {
+            lcd->print("ERR");
+        }
+    }
+}
