@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Terrário - Monitoramento</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Terrário - Controle de Temperatura e Umidade</h1>
+
+  <section class="card card-grid">
+    <div>
+      <div class="label">Temperatura atual</div>
+      <div id="tempAtual" class="valor">-- °C</div>
+    </div>
+    <div>
+      <div class="label">Umidade atual</div>
+      <div id="umidAtual" class="valor">-- %</div>
+    </div>
+    <div>
+      <div class="label">Setpoint</div>
+      <div id="setpointAtual" class="valor">-- °C</div>
+    </div>
+    <div>
+      <div class="label">Lâmpada</div>
+      <div id="estadoLampada" class="valor">--</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Ajuste do setpoint</h2>
+    <form id="formSetpoint">
+      <label for="valorSetpoint">Temperatura desejada (°C):</label>
+      <input type="number" id="valorSetpoint" name="valor" step="0.1" required>
+      <button type="submit">Aplicar</button>
+    </form>
+    <p class="nota">O valor é salvo no ESP32 e permanece após reiniciar.</p>
+  </section>
+
+  <section class="card">
+    <h2>Linha do tempo de hoje</h2>
+    <p class="nota">De 00:00 até 23:59, um ponto por minuto.</p>
+    <svg id="grafico" viewBox="0 0 100 60" preserveAspectRatio="none">
+      <line x1="5" y1="55" x2="95" y2="55"></line>
+      <line x1="5" y1="5" x2="5" y2="55"></line>
+      <polyline id="linhaTemp" class="linha-temp"></polyline>
+      <polyline id="linhaUmid" class="linha-umid"></polyline>
+      <text x="50" y="59" class="texto-eixo">Tempo (min)</text>
+      <text x="6" y="8" class="texto-eixo">Valor</text>
+    </svg>
+  </section>
+
+  <section class="card">
+    <h2>Tabela de dados de hoje</h2>
+    <table id="tabela">
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Temperatura (°C)</th>
+          <th>Umidade (%)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="nota">
+      CSV: 
+      <a href="/download?dia=0">dia 0 (hoje)</a> |
+      <a href="/download?dia=1">dia 1</a> |
+      <a href="/download?dia=2">dia 2</a> |
+      <a href="/download?dia=3">dia 3</a> |
+      <a href="/download?dia=4">dia 4</a> |
+      <a href="/download?dia=5">dia 5</a> |
+      <a href="/download?dia=6">dia 6</a>
+    </p>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
