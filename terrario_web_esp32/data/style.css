@@ -1,8 +1,9 @@
 body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: "Segoe UI", Roboto, sans-serif;
     margin: 0;
-    padding: 10px;
-    background: #f3f4f6;
+    padding: 15px;
+    background: #f4f5f7;
+    color: #111827;
 }
 
 h1 {
@@ -17,108 +18,195 @@ h2 {
 
 .card {
     background: #ffffff;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-.card-grid {
+.grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 10px;
 }
 
-.label {
+.info .label {
     font-size: 13px;
-    color: #555;
+    color: #6b7280;
 }
 
-.valor {
-    font-size: 20px;
+.info .value {
+    display: block;
+    font-size: 22px;
     font-weight: 600;
     margin-top: 4px;
 }
 
-.nota {
-    font-size: 12px;
-    color: #666;
-}
-
-form {
+.row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
+    gap: 10px;
+}
+
+input[type="number"],
+input[type="text"],
+input[type="password"] {
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
 }
 
 input[type="number"] {
-    padding: 6px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    width: 120px;
+    width: 110px;
 }
 
 button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
+    padding: 8px 12px;
     background: #2563eb;
     color: white;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
+    font-size: 14px;
 }
 
 button:hover {
     background: #1d4ed8;
 }
 
+.note {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
+}
+
+/* Tabela */
+
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
-}
-
-th,
-td {
-    border: 1px solid #ddd;
-    padding: 4px;
-    text-align: center;
+    font-size: 13px;
 }
 
 th {
     background: #e5e7eb;
+    padding: 6px;
+}
+
+td {
+    padding: 6px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+/* Gráfico */
+
+.chart-container {
+    width: 100%;
+    height: auto;
+    margin-top: 10px;
 }
 
 svg {
     width: 100%;
-    height: 200px;
+    height: 260px;
     background: #ffffff;
     border-radius: 8px;
     border: 1px solid #e5e7eb;
 }
 
-line {
-    stroke: #000;
-    stroke-width: 0.5;
+/* Eixos */
+.axis {
+    stroke: #9ca3af;
+    stroke-width: 0.4;
 }
 
-.linha-temp {
-    fill: none;
+/* Séries */
+.line-temp {
     stroke: #2563eb;
-    stroke-width: 0.6;
-}
-
-.linha-umid {
+    stroke-width: 0.7;
     fill: none;
+}
+
+.line-umid {
     stroke: #f97316;
-    stroke-width: 0.6;
+    stroke-width: 0.7;
+    fill: none;
 }
 
-.texto-eixo {
-    font-size: 3px;
+/* Pontos */
+.point-temp {
+    fill: #2563eb;
+    stroke: #ffffff;
+    stroke-width: 0.3;
 }
 
-@media (min-width: 700px) {
+.point-umid {
+    fill: #f97316;
+    stroke: #ffffff;
+    stroke-width: 0.3;
+}
+
+/* Legenda textual */
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.legend .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.legend .temp {
+    background: #2563eb;
+}
+
+.legend .umid {
+    background: #f97316;
+}
+
+/* Título e rótulos */
+
+.axis-text {
+    font-size: 3.2px;
+    fill: #374151;
+}
+
+/* Status de rede */
+
+.net-status {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.net-status .label {
+    font-size: 13px;
+    color: #6b7280;
+    margin-right: 4px;
+}
+
+.net-actions {
+    margin-bottom: 10px;
+}
+
+/* Responsivo */
+
+@media (min-width: 800px) {
     body {
         padding: 20px 15%;
     }

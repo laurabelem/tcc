@@ -2,60 +2,117 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Terrário - Monitoramento</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terrário - Monitoramento</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <h1>Terrário - Controle de Temperatura e Umidade</h1>
 
-  <section class="card card-grid">
-    <div>
-      <div class="label">Temperatura atual</div>
-      <div id="tempAtual" class="valor">-- °C</div>
+  <h1>Terrário - Monitoramento Ambiental</h1>
+
+  <!-- Valores atuais -->
+  <section class="card grid">
+    <div class="info">
+      <span class="label">Temperatura</span>
+      <span id="tempAtual" class="value">-- °C</span>
     </div>
-    <div>
-      <div class="label">Umidade atual</div>
-      <div id="umidAtual" class="valor">-- %</div>
+
+    <div class="info">
+      <span class="label">Umidade</span>
+      <span id="umidAtual" class="value">-- %</span>
     </div>
-    <div>
-      <div class="label">Setpoint</div>
-      <div id="setpointAtual" class="valor">-- °C</div>
+
+    <div class="info">
+      <span class="label">Lâmpada</span>
+      <span id="estadoLampada" class="value">--</span>
     </div>
-    <div>
-      <div class="label">Lâmpada</div>
-      <div id="estadoLampada" class="valor">--</div>
+
+    <div class="info">
+      <span class="label">Setpoint</span>
+      <span id="setpointAtual" class="value">-- °C</span>
     </div>
   </section>
 
+  <!-- Ajuste do setpoint -->
   <section class="card">
-    <h2>Ajuste do setpoint</h2>
+    <h2>Ajuste do Setpoint</h2>
+
     <form id="formSetpoint">
-      <label for="valorSetpoint">Temperatura desejada (°C):</label>
-      <input type="number" id="valorSetpoint" name="valor" step="0.1" required>
-      <button type="submit">Aplicar</button>
+      <div class="row">
+        <input type="number" id="valorSetpoint" name="valor" step="0.1" required>
+        <button type="submit">Aplicar</button>
+      </div>
+      <p class="note">O valor é salvo no ESP32 e permanece após reiniciar.</p>
     </form>
-    <p class="nota">O valor é salvo no ESP32 e permanece após reiniciar.</p>
   </section>
 
+  <!-- Conexão com a internet -->
+  <section class="card">
+    <h2>Conexão com a Internet</h2>
+
+    <div class="net-status">
+      <div><span class="label">Status:</span> <span id="netStatus">Desconectado</span></div>
+      <div><span class="label">Hora atual:</span> <span id="netTime">Offline</span></div>
+      <div><span class="label">Rede STA:</span> <span id="netSsid">Não configurado</span></div>
+    </div>
+
+    <div class="net-actions">
+      <button type="button" id="syncNtpBtn">Sincronizar agora</button>
+    </div>
+
+    <form id="wifiForm">
+      <div class="row">
+        <input type="text" id="wifiSsid" name="ssid" placeholder="SSID da sua rede" required>
+        <input type="password" id="wifiPass" name="senha" placeholder="Senha" required>
+        <button type="submit">Salvar e conectar</button>
+      </div>
+      <p class="note">
+        O ESP32 continua criando a rede <strong>TerrarioESP</strong> mesmo conectado ao Wi-Fi da casa.
+      </p>
+    </form>
+  </section>
+
+  <!-- Gráfico -->
   <section class="card">
     <h2>Linha do tempo de hoje</h2>
-    <p class="nota">De 00:00 até 23:59, um ponto por minuto.</p>
-    <svg id="grafico" viewBox="0 0 100 60" preserveAspectRatio="none">
-      <line x1="5" y1="55" x2="95" y2="55"></line>
-      <line x1="5" y1="5" x2="5" y2="55"></line>
-      <polyline id="linhaTemp" class="linha-temp"></polyline>
-      <polyline id="linhaUmid" class="linha-umid"></polyline>
-      <text x="50" y="59" class="texto-eixo">Tempo (min)</text>
-      <text x="6" y="8" class="texto-eixo">Valor</text>
-    </svg>
+    <p class="note">Os pontos são registrados minuto a minuto com base na hora atual.</p>
+
+    <div class="legend">
+      <span class="dot temp"></span><span>Temperatura (°C)</span>
+      <span class="dot umid"></span><span>Umidade (%)</span>
+    </div>
+
+    <div class="chart-container">
+      <svg id="grafico" viewBox="0 0 100 70" preserveAspectRatio="none">
+
+        <!-- Eixos -->
+        <line x1="7" y1="65" x2="97" y2="65" class="axis"></line>
+        <line x1="7" y1="5" x2="7" y2="65" class="axis"></line>
+
+        <!-- Linhas das séries -->
+        <polyline id="linhaTemp" class="line-temp"></polyline>
+        <polyline id="linhaUmid" class="line-umid"></polyline>
+
+        <!-- Pontos -->
+        <g id="pontosTemp"></g>
+        <g id="pontosUmid"></g>
+
+        <!-- Rótulos -->
+        <text x="50" y="69" class="axis-text">Tempo (min)</text>
+        <text x="9" y="8" class="axis-text">Valor</text>
+      </svg>
+    </div>
   </section>
 
+  <!-- Tabela -->
   <section class="card">
     <h2>Tabela de dados de hoje</h2>
+
     <table id="tabela">
       <thead>
         <tr>
+          <th>Data</th>
           <th>Hora</th>
           <th>Temperatura (°C)</th>
           <th>Umidade (%)</th>
@@ -63,9 +120,10 @@
       </thead>
       <tbody></tbody>
     </table>
-    <p class="nota">
-      CSV: 
-      <a href="/download?dia=0">dia 0 (hoje)</a> |
+
+    <p class="note">
+      CSV:
+      <a href="/download?dia=0">dia 0</a> |
       <a href="/download?dia=1">dia 1</a> |
       <a href="/download?dia=2">dia 2</a> |
       <a href="/download?dia=3">dia 3</a> |
